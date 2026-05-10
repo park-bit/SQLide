@@ -15,28 +15,29 @@ interface SqlEditorProps {
   wordWrap?: boolean;
   minimap?: boolean;
   schema?: SchemaRef[];
+  theme?: 'dark' | 'noir';
 }
 
 const SQL_KEYWORDS = [
-  'SELECT','FROM','WHERE','INSERT','INTO','VALUES','UPDATE','SET','DELETE',
-  'CREATE','TABLE','DROP','ALTER','ADD','COLUMN','INDEX','VIEW','TRIGGER',
-  'JOIN','LEFT','RIGHT','INNER','OUTER','FULL','CROSS','ON','AS',
-  'AND','OR','NOT','IN','IS','NULL','LIKE','BETWEEN','EXISTS','ANY','ALL',
-  'ORDER','BY','GROUP','HAVING','LIMIT','OFFSET','DISTINCT','UNION','INTERSECT','EXCEPT',
-  'PRIMARY','KEY','FOREIGN','REFERENCES','UNIQUE','DEFAULT','CHECK','CONSTRAINT',
-  'INTEGER','INT','TEXT','VARCHAR','CHAR','REAL','FLOAT','DOUBLE','NUMERIC','DECIMAL',
-  'BOOLEAN','BOOL','DATE','DATETIME','TIMESTAMP','BLOB',
-  'COUNT','SUM','AVG','MIN','MAX','COALESCE','IFNULL','NULLIF','CASE','WHEN','THEN','ELSE','END',
-  'AUTOINCREMENT','AUTO_INCREMENT','IF','NOT','EXISTS','CASCADE','RESTRICT',
-  'TRANSACTION','COMMIT','ROLLBACK','BEGIN','SAVEPOINT',
-  'EXPLAIN','ANALYZE','VACUUM','PRAGMA',
+  'SELECT', 'FROM', 'WHERE', 'INSERT', 'INTO', 'VALUES', 'UPDATE', 'SET', 'DELETE',
+  'CREATE', 'TABLE', 'DROP', 'ALTER', 'ADD', 'COLUMN', 'INDEX', 'VIEW', 'TRIGGER',
+  'JOIN', 'LEFT', 'RIGHT', 'INNER', 'OUTER', 'FULL', 'CROSS', 'ON', 'AS',
+  'AND', 'OR', 'NOT', 'IN', 'IS', 'NULL', 'LIKE', 'BETWEEN', 'EXISTS', 'ANY', 'ALL',
+  'ORDER', 'BY', 'GROUP', 'HAVING', 'LIMIT', 'OFFSET', 'DISTINCT', 'UNION', 'INTERSECT', 'EXCEPT',
+  'PRIMARY', 'KEY', 'FOREIGN', 'REFERENCES', 'UNIQUE', 'DEFAULT', 'CHECK', 'CONSTRAINT',
+  'INTEGER', 'INT', 'TEXT', 'VARCHAR', 'CHAR', 'REAL', 'FLOAT', 'DOUBLE', 'NUMERIC', 'DECIMAL',
+  'BOOLEAN', 'BOOL', 'DATE', 'DATETIME', 'TIMESTAMP', 'BLOB',
+  'COUNT', 'SUM', 'AVG', 'MIN', 'MAX', 'COALESCE', 'IFNULL', 'NULLIF', 'CASE', 'WHEN', 'THEN', 'ELSE', 'END',
+  'AUTOINCREMENT', 'AUTO_INCREMENT', 'IF', 'NOT', 'EXISTS', 'CASCADE', 'RESTRICT',
+  'TRANSACTION', 'COMMIT', 'ROLLBACK', 'BEGIN', 'SAVEPOINT',
+  'EXPLAIN', 'ANALYZE', 'VACUUM', 'PRAGMA',
 ];
 
 const SQL_FUNCTIONS = [
-  'COUNT','SUM','AVG','MIN','MAX','LENGTH','UPPER','LOWER','TRIM','LTRIM','RTRIM',
-  'SUBSTR','SUBSTRING','REPLACE','INSTR','PRINTF','FORMAT','DATE','TIME','DATETIME',
-  'JULIANDAY','STRFTIME','ABS','ROUND','CEIL','FLOOR','MOD','RANDOM','COALESCE',
-  'IFNULL','NULLIF','GROUP_CONCAT','JSON','JSON_OBJECT','JSON_ARRAY',
+  'COUNT', 'SUM', 'AVG', 'MIN', 'MAX', 'LENGTH', 'UPPER', 'LOWER', 'TRIM', 'LTRIM', 'RTRIM',
+  'SUBSTR', 'SUBSTRING', 'REPLACE', 'INSTR', 'PRINTF', 'FORMAT', 'DATE', 'TIME', 'DATETIME',
+  'JULIANDAY', 'STRFTIME', 'ABS', 'ROUND', 'CEIL', 'FLOOR', 'MOD', 'RANDOM', 'COALESCE',
+  'IFNULL', 'NULLIF', 'GROUP_CONCAT', 'JSON', 'JSON_OBJECT', 'JSON_ARRAY',
 ];
 
 type MonacoInstance = any;
@@ -44,6 +45,7 @@ type MonacoInstance = any;
 export default function SqlEditor({
   value, onChange, onRun, height = '100%',
   fontSize = 14, wordWrap = false, minimap = false, schema = [],
+  theme = 'dark',
 }: SqlEditorProps) {
   const [cursorPos, setCursorPos] = useState({ line: 1, col: 1 });
   const disposableRef = useRef<{ dispose: () => void } | null>(null);
@@ -56,35 +58,70 @@ export default function SqlEditor({
       base: 'vs-dark',
       inherit: true,
       rules: [
-        { token: 'keyword',     foreground: '4f8ef7', fontStyle: 'bold' },
+        { token: 'keyword', foreground: '4f8ef7', fontStyle: 'bold' },
         { token: 'keyword.sql', foreground: '4f8ef7', fontStyle: 'bold' },
-        { token: 'string',      foreground: '86efac' },
-        { token: 'string.sql',  foreground: '86efac' },
-        { token: 'number',      foreground: 'fbbf24' },
-        { token: 'comment',     foreground: '6b7280', fontStyle: 'italic' },
-        { token: 'operator',    foreground: 'f472b6' },
-        { token: 'identifier',  foreground: 'e8eaf0' },
-        { token: 'type',        foreground: 'a78bfa' },
+        { token: 'string', foreground: '86efac' },
+        { token: 'string.sql', foreground: '86efac' },
+        { token: 'number', foreground: 'fbbf24' },
+        { token: 'comment', foreground: '6b7280', fontStyle: 'italic' },
+        { token: 'operator', foreground: 'f472b6' },
+        { token: 'identifier', foreground: 'e8eaf0' },
+        { token: 'type', foreground: 'a78bfa' },
       ],
       colors: {
-        'editor.background':               '#0d0e14',
-        'editor.foreground':               '#e8eaf0',
-        'editor.lineHighlightBackground':  '#1a1b26',
-        'editor.selectionBackground':      '#4f8ef740',
-        'editorCursor.foreground':         '#4f8ef7',
-        'editorLineNumber.foreground':     '#565970',
+        'editor.background': '#0d0e14',
+        'editor.foreground': '#e8eaf0',
+        'editor.lineHighlightBackground': '#1a1b26',
+        'editor.selectionBackground': '#4f8ef740',
+        'editorCursor.foreground': '#4f8ef7',
+        'editorLineNumber.foreground': '#565970',
         'editorLineNumber.activeForeground': '#8b8fa8',
-        'editorGutter.background':         '#0d0e14',
-        'editorWidget.background':         '#13141c',
-        'editorSuggestWidget.background':  '#13141c',
-        'editorSuggestWidget.border':      '#2a2c3e',
+        'editorGutter.background': '#0d0e14',
+        'editorWidget.background': '#13141c',
+        'editorSuggestWidget.background': '#13141c',
+        'editorSuggestWidget.border': '#2a2c3e',
         'editorSuggestWidget.selectedBackground': '#1a1b26',
-        'input.background':                '#1a1b26',
-        'scrollbarSlider.background':      '#2a2c3e80',
+        'input.background': '#1a1b26',
+        'scrollbarSlider.background': '#2a2c3e80',
         'scrollbarSlider.hoverBackground': '#343650',
       },
     });
-    monaco.editor.setTheme('sqlide-dark');
+
+    monaco.editor.defineTheme('sqlide-noir', {
+      base: 'vs-dark',
+      inherit: true,
+      rules: [
+        { token: 'keyword', foreground: '61afef', fontStyle: 'bold' },
+        { token: 'keyword.sql', foreground: '61afef', fontStyle: 'bold' },
+        { token: 'string', foreground: 'e5c07b' },
+        { token: 'string.sql', foreground: 'e5c07b' },
+        { token: 'number', foreground: 'fde047' },
+        { token: 'comment', foreground: '5c6370', fontStyle: 'italic' },
+        { token: 'operator', foreground: '56b6c2' },
+        { token: 'identifier', foreground: 'ffffff' },
+        { token: 'type', foreground: '56b6c2' },
+        { token: 'predefined', foreground: '56b6c2' },
+      ],
+      colors: {
+        'editor.background': '#0a0a0a',
+        'editor.foreground': '#ffffff',
+        'editor.lineHighlightBackground': '#1a1a1a',
+        'editor.selectionBackground': '#ffffff20',
+        'editorCursor.foreground': '#ffffff',
+        'editorLineNumber.foreground': '#4b5263',
+        'editorLineNumber.activeForeground': '#ffffff',
+        'editorGutter.background': '#0a0a0a',
+        'editorWidget.background': '#111111',
+        'editorSuggestWidget.background': '#111111',
+        'editorSuggestWidget.border': '#222222',
+        'editorSuggestWidget.selectedBackground': '#181818',
+        'input.background': '#181818',
+        'scrollbarSlider.background': '#33333380',
+        'scrollbarSlider.hoverBackground': '#444444',
+      },
+    });
+
+    monaco.editor.setTheme(theme === 'noir' ? 'sqlide-noir' : 'sqlide-dark');
 
     if (disposableRef.current) disposableRef.current.dispose();
 
@@ -144,7 +181,7 @@ export default function SqlEditor({
     });
 
     editor.focus();
-  }, [schema]);
+  }, [schema, theme]);
 
   const options = useMemo(() => ({
     fontSize,
@@ -183,7 +220,7 @@ export default function SqlEditor({
           value={value}
           onChange={v => onChange(v ?? '')}
           onMount={handleMount}
-          theme="sqlide-dark"
+          theme={theme === 'noir' ? 'sqlide-noir' : 'sqlide-dark'}
           options={options}
         />
       </div>
@@ -194,8 +231,8 @@ export default function SqlEditor({
         padding: '2px 10px',
         fontSize: 11,
         fontFamily: "'JetBrains Mono', monospace",
-        color: '#565970',
-        background: 'rgba(13,14,20,0.8)',
+        color: theme === 'noir' ? '#666666' : '#565970',
+        background: theme === 'noir' ? 'rgba(10,10,10,0.8)' : 'rgba(13,14,20,0.8)',
         borderTopLeftRadius: 4,
         userSelect: 'none',
       }}>

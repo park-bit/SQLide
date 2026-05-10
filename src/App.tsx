@@ -232,6 +232,26 @@ function IDE() {
   const [viewingTable, setViewingTable] = useState<string | null>(null);
   const [activeSidebarTab, setActiveSidebarTab] = useState<'explorer' | 'diagram'>('explorer');
   const [resultTabTrigger, setResultTabTrigger] = useState<string | null>(null);
+  const [theme, setTheme] = useState<'dark' | 'noir'>(() => Math.random() > 0.5 ? 'noir' : 'dark');
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
+
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      const hasContent = tabs.some(t => {
+        const q = t.query.trim();
+        return q.length > 0 && q !== SNIPPETS['New Query'] && !q.includes('-- Fetching inspiration');
+      });
+      if (hasContent) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [tabs]);
 
   const { size: outputHeight, dragging, onMouseDown } = useResizer(240, outputPosition);
 
@@ -391,9 +411,9 @@ function IDE() {
             </svg>
           </button>
           <button id="btn-settings" className="btn btn-ghost" onClick={() => setSettingsOpen(true)} title="Settings">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
               <circle cx="12" cy="12" r="3"/>
-              <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/>
             </svg>
           </button>
           
@@ -524,6 +544,7 @@ function IDE() {
                 wordWrap={wordWrap}
                 minimap={minimap}
                 schema={schema}
+                theme={theme}
               />
             </div>
           </div>
@@ -618,6 +639,25 @@ function IDE() {
                 <div className="toggle__track" />
                 <div className="toggle__thumb" />
               </label>
+            </div>
+            <div className="settings-row">
+              <span className="settings-label">Interface Theme</span>
+              <div style={{ display: 'flex', gap: 4 }}>
+                <button 
+                  className={`btn btn-ghost ${theme === 'dark' ? 'active' : ''}`}
+                  onClick={() => setTheme('dark')}
+                  style={{ fontSize: 11, padding: '4px 10px' }}
+                >
+                  Classic
+                </button>
+                <button 
+                  className={`btn btn-ghost ${theme === 'noir' ? 'active' : ''}`}
+                  onClick={() => setTheme('noir')}
+                  style={{ fontSize: 11, padding: '4px 10px' }}
+                >
+                  Noir
+                </button>
+              </div>
             </div>
           </div>
         </div>

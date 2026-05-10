@@ -173,7 +173,7 @@
 
 .btn-run {
   background: var(--run-btn);
-  color: #0d1a14;
+  color: var(--run-btn-text);
   font-weight: 600;
   box-shadow: 0 0 20px rgba(34, 211, 160, 0.3);
   padding: 7px 18px;

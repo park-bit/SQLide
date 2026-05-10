@@ -93,7 +93,7 @@ export default function SchemaExplorer({ onQuery, onViewData }: SchemaExplorerPr
             padding: '4px 12px', fontSize: 11, fontWeight: 600,
             color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px'
           }}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--sidebar-icon)" strokeWidth="2">
               <ellipse cx="12" cy="5" rx="9" ry="3"/>
               <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
               <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>

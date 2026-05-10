@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState, useMemo } from 'react';
+import { useCallback, useRef, useState, useMemo, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
 
 interface SchemaRef {
@@ -16,6 +16,7 @@ interface SqlEditorProps {
   minimap?: boolean;
   schema?: SchemaRef[];
   theme?: 'dark' | 'noir';
+  errorLine?: number;
 }
 
 const SQL_KEYWORDS = [
@@ -45,15 +46,44 @@ type MonacoInstance = any;
 export default function SqlEditor({
   value, onChange, onRun, height = '100%',
   fontSize = 14, wordWrap = false, minimap = false, schema = [],
-  theme = 'dark',
+  theme = 'dark', errorLine,
 }: SqlEditorProps) {
   const [cursorPos, setCursorPos] = useState({ line: 1, col: 1 });
+  const editorRef = useRef<MonacoInstance | null>(null);
+  const monacoRef = useRef<MonacoInstance | null>(null);
+  const decorationRef = useRef<string[]>([]);
   const disposableRef = useRef<{ dispose: () => void } | null>(null);
 
   const onRunRef = useRef(onRun);
   onRunRef.current = onRun;
 
+  useEffect(() => {
+    if (!editorRef.current || !monacoRef.current) return;
+    const editor = editorRef.current;
+    const monaco = monacoRef.current;
+
+    if (errorLine && errorLine > 0) {
+      decorationRef.current = editor.deltaDecorations(decorationRef.current, [
+        {
+          range: new monaco.Range(errorLine, 1, errorLine, 1),
+          options: {
+            isWholeLine: true,
+            className: 'error-line-highlight',
+            glyphMarginClassName: 'error-glyph-margin',
+            hoverMessage: { value: 'Syntax error detected around here.' },
+            zIndex: 10,
+          }
+        }
+      ]);
+      editor.revealLineInCenterIfOutsideViewport(errorLine);
+    } else {
+      decorationRef.current = editor.deltaDecorations(decorationRef.current, []);
+    }
+  }, [errorLine]);
+
   const handleMount = useCallback((editor: MonacoInstance, monaco: MonacoInstance) => {
+    editorRef.current = editor;
+    monacoRef.current = monaco;
     monaco.editor.defineTheme('sqlide-dark', {
       base: 'vs-dark',
       inherit: true,

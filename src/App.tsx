@@ -173,20 +173,35 @@ function IDE() {
 
   const [results, setResults] = useState<QueryExecResult[]>([]);
   const [execError, setExecError] = useState<string | undefined>();
+  const [errorLine, setErrorLine] = useState<number | undefined>();
   const [execTime, setExecTime] = useState<number | undefined>();
   const [affectedRows, setAffectedRows] = useState<number | undefined>();
   const [running, setRunning] = useState(false);
   const [log, setLog] = useState<LogEntry[]>([]);
+  const [browseResult, setBrowseResult] = useState<QueryExecResult | null>(null);
+  const [browseTableName, setBrowseTableName] = useState<string | null>(null);
 
   const appendLog = useCallback((level: LogEntry['level'], message: string) => {
     setLog(prev => [...prev.slice(-499), { level, message, timestamp: new Date() }]);
   }, []);
+
+  const handleBrowseTable = useCallback(async (name: string) => {
+    setBrowseTableName(name);
+    setResultTabTrigger('browse');
+    setBrowseResult(null);
+    const res = await execute(`SELECT * FROM "${name}" LIMIT 1000`);
+    if (res.results.length > 0) {
+      setBrowseResult(res.results[0]);
+    }
+  }, [execute]);
 
   const runQuery = useCallback(async () => {
     if (!ready || running) return;
     const query = activeTab.query.trim();
     if (!query) return;
     setRunning(true);
+    setExecError(undefined);
+    setErrorLine(undefined);
     appendLog('info', `Executing: ${query.slice(0, 120)}${query.length > 120 ? '...' : ''}`);
     try {
       const res = await execute(query);
@@ -205,6 +220,10 @@ function IDE() {
 
       if (res.error) {
         appendLog('error', `Error: ${res.error}`);
+        const lineMatch = res.error.match(/approx\. line (\d+)/);
+        if (lineMatch) {
+          setErrorLine(parseInt(lineMatch[1]));
+        }
       } else {
         const rowCount = res.results.reduce((s, r) => s + r.values.length, 0);
         const msg = res.results.length > 0
@@ -480,7 +499,7 @@ function IDE() {
               {activeSidebarTab === 'explorer' ? (
                 <SchemaExplorer 
                   onQuery={(q) => updateQuery(q, true)} 
-                  onViewData={(t) => setViewingTable(t)} 
+                  onViewData={handleBrowseTable} 
                 />
               ) : (
                 <div style={{ height: '100%', overflow: 'auto', background: '#090a0f' }}>
@@ -545,6 +564,7 @@ function IDE() {
                 minimap={minimap}
                 schema={schema}
                 theme={theme}
+                errorLine={errorLine}
               />
             </div>
           </div>
@@ -567,6 +587,8 @@ function IDE() {
               onClearHistory={() => clearHistory()}
               onRunHistory={loadHistory}
               forcedTab={resultTabTrigger}
+              browseResult={browseResult}
+              browseTableName={browseTableName}
             />
           </div>
         </div>
@@ -588,7 +610,7 @@ function IDE() {
         </span>
         <span className="statusbar__item">SQLite (in-browser)</span>
         <span className="statusbar__item">{schema.length} tables</span>
-        {running && <span className="statusbar__item">⏳ Running…</span>}
+        {running && <span className="statusbar__item"><span className="spinner" style={{ width: 10, height: 10, borderWidth: 1.5 }} /> Running…</span>}
       </div>
 
 
@@ -596,7 +618,12 @@ function IDE() {
       {snippetOpen && (
         <div className="modal-backdrop" onClick={() => setSnippetOpen(false)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
-            <div className="modal__title">📋 SQL Snippets</div>
+            <div className="modal__title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: 8 }}>
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+              </svg>
+              SQL Snippets
+            </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {Object.keys(SNIPPETS).map(name => (
                 <button key={name} className="btn btn-ghost" style={{ justifyContent: 'flex-start', textAlign: 'left' }} onClick={() => loadSnippet(name)}>
@@ -615,7 +642,12 @@ function IDE() {
       {settingsOpen && (
         <div className="modal-backdrop" onClick={() => setSettingsOpen(false)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
-            <div className="modal__title">⚙ Editor Settings</div>
+            <div className="modal__title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 8 }}>
+                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>
+              </svg>
+              Editor Settings
+            </div>
             <div className="settings-row">
               <span className="settings-label">Font Size</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -666,7 +698,12 @@ function IDE() {
       {shareOpen && (
         <div className="modal-backdrop" onClick={() => setShareOpen(false)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
-            <div className="modal__title">🔗 Share Query</div>
+            <div className="modal__title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: 8 }}>
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+              </svg>
+              Share Query
+            </div>
             <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 12 }}>
               Copy this URL to share your current query with anyone:
             </p>

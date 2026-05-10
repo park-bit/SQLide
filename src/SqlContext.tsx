@@ -98,14 +98,21 @@ function translateMySqlToSqlite(sql: string): string {
   mapped = mapped.replace(/\b(INT|BIGINT|MEDIUMINT|SMALLINT|TINYINT)(\s*\(\d+\))?\s+PRIMARY\s+KEY\s+AUTOINCREMENT\b/gi, 'INTEGER PRIMARY KEY AUTOINCREMENT');
   mapped = mapped.replace(/\b(INT|BIGINT|MEDIUMINT|SMALLINT|TINYINT)(\s*\(\d+\))?\s+AUTOINCREMENT\b/gi, 'INTEGER AUTOINCREMENT');
   
-  // 3. Data Types Compatibility (Clean up sizes)
+  // 3. Data Types Compatibility (Clean up sizes and map to SQLite natives)
   mapped = mapped.replace(/\bUNSIGNED\b/gi, '');
   mapped = mapped.replace(/\b(BIGINT|MEDIUMINT|SMALLINT|TINYINT)(\s*\(\d+\))?/gi, 'INTEGER');
   mapped = mapped.replace(/\bDECIMAL(\s*\(\d+(,\d+)?\))?/gi, 'REAL');
-  mapped = mapped.replace(/\bDOUBLE(\s+PRECISION)?\b/gi, 'REAL');
+  mapped = mapped.replace(/\bDOUBLE(\s+PRECISION)?(\s*\(\d+(,\d+)?\))?/gi, 'REAL');
+  mapped = mapped.replace(/\bFLOAT(\s*\(\d+(,\d+)?\))?/gi, 'REAL');
   mapped = mapped.replace(/\bJSON\b/gi, 'TEXT');
   
   // 4. Common MySQL Functions to SQLite equivalents
+  // Note: SQLite requires parentheses around function calls in DEFAULT clauses
+  mapped = mapped.replace(/\bDEFAULT\s+NOW\(\)/gi, "DEFAULT (datetime('now'))");
+  mapped = mapped.replace(/\bDEFAULT\s+CURDATE\(\)/gi, "DEFAULT (date('now'))");
+  mapped = mapped.replace(/\bDEFAULT\s+CURTIME\(\)/gi, "DEFAULT (time('now'))");
+  
+  // Also handle naked function calls
   mapped = mapped.replace(/\bNOW\(\)/gi, "datetime('now')");
   mapped = mapped.replace(/\bCURDATE\(\)/gi, "date('now')");
   mapped = mapped.replace(/\bCURTIME\(\)/gi, "time('now')");

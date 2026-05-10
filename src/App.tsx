@@ -173,6 +173,7 @@ function IDE() {
 
   const [results, setResults] = useState<QueryExecResult[]>([]);
   const [execError, setExecError] = useState<string | undefined>();
+  const [errorLine, setErrorLine] = useState<number | undefined>();
   const [execTime, setExecTime] = useState<number | undefined>();
   const [affectedRows, setAffectedRows] = useState<number | undefined>();
   const [running, setRunning] = useState(false);
@@ -187,6 +188,8 @@ function IDE() {
     const query = activeTab.query.trim();
     if (!query) return;
     setRunning(true);
+    setExecError(undefined);
+    setErrorLine(undefined);
     appendLog('info', `Executing: ${query.slice(0, 120)}${query.length > 120 ? '...' : ''}`);
     try {
       const res = await execute(query);
@@ -205,6 +208,10 @@ function IDE() {
 
       if (res.error) {
         appendLog('error', `Error: ${res.error}`);
+        const lineMatch = res.error.match(/approx\. line (\d+)/);
+        if (lineMatch) {
+          setErrorLine(parseInt(lineMatch[1]));
+        }
       } else {
         const rowCount = res.results.reduce((s, r) => s + r.values.length, 0);
         const msg = res.results.length > 0
@@ -545,6 +552,7 @@ function IDE() {
                 minimap={minimap}
                 schema={schema}
                 theme={theme}
+                errorLine={errorLine}
               />
             </div>
           </div>

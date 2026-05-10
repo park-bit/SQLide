@@ -93,17 +93,16 @@ function translateMySqlToSqlite(sql: string): string {
 
   // 2. AUTO_INCREMENT -> AUTOINCREMENT (and ensure INTEGER type)
   mapped = mapped.replace(/\bAUTO_INCREMENT\b/gi, 'AUTOINCREMENT');
-  mapped = mapped.replace(/\b(INT|BIGINT|MEDIUMINT|SMALLINT|TINYINT)(\(\d+\))?\s+PRIMARY\s+KEY\s+AUTOINCREMENT\b/gi, 'INTEGER PRIMARY KEY AUTOINCREMENT');
-  mapped = mapped.replace(/\b(INT|BIGINT|MEDIUMINT|SMALLINT|TINYINT)(\(\d+\))?\s+AUTOINCREMENT\b/gi, 'INTEGER AUTOINCREMENT');
   
-  // 3. Data Types Compatibility
+  // Map various INT types with size and constraints to just INTEGER PRIMARY KEY AUTOINCREMENT
+  mapped = mapped.replace(/\b(INT|BIGINT|MEDIUMINT|SMALLINT|TINYINT)(\s*\(\d+\))?\s+PRIMARY\s+KEY\s+AUTOINCREMENT\b/gi, 'INTEGER PRIMARY KEY AUTOINCREMENT');
+  mapped = mapped.replace(/\b(INT|BIGINT|MEDIUMINT|SMALLINT|TINYINT)(\s*\(\d+\))?\s+AUTOINCREMENT\b/gi, 'INTEGER AUTOINCREMENT');
+  
+  // 3. Data Types Compatibility (Clean up sizes)
   mapped = mapped.replace(/\bUNSIGNED\b/gi, '');
-  mapped = mapped.replace(/\bBIGINT(\(\d+\))?/gi, 'INTEGER');
-  mapped = mapped.replace(/\bMEDIUMINT(\(\d+\))?/gi, 'INTEGER');
-  mapped = mapped.replace(/\bSMALLINT(\(\d+\))?/gi, 'INTEGER');
-  mapped = mapped.replace(/\bTINYINT(\(\d+\))?/gi, 'INTEGER');
-  mapped = mapped.replace(/\bDECIMAL(\(\d+(,\d+)?\))?/gi, 'REAL');
-  mapped = mapped.replace(/\bDOUBLE\b/gi, 'REAL');
+  mapped = mapped.replace(/\b(BIGINT|MEDIUMINT|SMALLINT|TINYINT)(\s*\(\d+\))?/gi, 'INTEGER');
+  mapped = mapped.replace(/\bDECIMAL(\s*\(\d+(,\d+)?\))?/gi, 'REAL');
+  mapped = mapped.replace(/\bDOUBLE(\s+PRECISION)?\b/gi, 'REAL');
   mapped = mapped.replace(/\bJSON\b/gi, 'TEXT');
   
   // 4. Common MySQL Functions to SQLite equivalents
@@ -188,50 +187,82 @@ export function SqlProvider({ children }: { children: React.ReactNode }) {
     const db = dbRef.current;
     if (!db) return { results: [], error: 'Database not ready', executionTime: 0 };
 
-    const sql = translateMySqlToSqlite(rawSql);
     const t0 = performance.now();
-    try {
-      const results: QueryExecResult[] = db.exec(sql);
-      const executionTime = performance.now() - t0;
+    const allResults: QueryExecResult[] = [];
+    let affectedRowsTotal = 0;
 
-      let affectedRows: number | undefined;
-      const trimmed = sql.trim().toUpperCase();
-      if (
-        trimmed.startsWith('INSERT') ||
-        trimmed.startsWith('UPDATE') ||
-        trimmed.startsWith('DELETE')
-      ) {
+    try {
+      // Split into statements while keeping track of approximate line numbers
+      // This is a naive split but good enough for general localization
+      const statements = rawSql.split(/;(?=(?:[^']*'[^']*')*[^']*$)/);
+      let currentLine = 1;
+
+      for (let rawStmt of statements) {
+        const trimmed = rawStmt.trim();
+        if (!trimmed) {
+          currentLine += (rawStmt.match(/\n/g) || []).length;
+          continue;
+        }
+
+        const sql = translateMySqlToSqlite(trimmed);
         try {
-          const r = db.exec('SELECT changes()');
-          affectedRows = r[0]?.values?.[0]?.[0] as number;
-        } catch { }
+          const res = db.exec(sql);
+          if (res.length > 0) allResults.push(...res);
+
+          // Track affected rows
+          if (
+            sql.toUpperCase().startsWith('INSERT') ||
+            sql.toUpperCase().startsWith('UPDATE') ||
+            sql.toUpperCase().startsWith('DELETE')
+          ) {
+            try {
+              const r = db.exec('SELECT changes()');
+              affectedRowsTotal += (r[0]?.values?.[0]?.[0] as number) || 0;
+            } catch { }
+          }
+        } catch (e: any) {
+          const executionTime = performance.now() - t0;
+          const errMsg = e instanceof Error ? e.message : String(e);
+          
+          // Try to pinpoint line number in the original script
+          const linesBefore = rawSql.substring(0, rawSql.indexOf(trimmed)).split('\n').length;
+          
+          const entry: HistoryEntry = {
+            id: crypto.randomUUID(),
+            query: trimmed.slice(0, 200),
+            timestamp: new Date(),
+            success: false,
+            executionTime,
+          };
+          setHistory(h => [entry, ...h].slice(0, 200));
+          setLastExecution(Date.now());
+          
+          return { 
+            results: allResults, 
+            error: `${errMsg} (approx. line ${linesBefore})`, 
+            executionTime 
+          };
+        }
+        
+        currentLine += (rawStmt.match(/\n/g) || []).length;
       }
 
+      const executionTime = performance.now() - t0;
       const entry: HistoryEntry = {
         id: crypto.randomUUID(),
-        query: sql.trim().slice(0, 200),
+        query: rawSql.trim().slice(0, 200),
         timestamp: new Date(),
         success: true,
         executionTime,
-        rowCount: results[0]?.values?.length,
+        rowCount: allResults[0]?.values?.length,
       };
       setHistory(h => [entry, ...h].slice(0, 200));
       setLastExecution(Date.now());
       refreshSchema();
-      return { results, affectedRows, executionTime };
-    } catch (e: unknown) {
+      return { results: allResults, affectedRows: affectedRowsTotal, executionTime };
+    } catch (e: any) {
       const executionTime = performance.now() - t0;
-      const errMsg = e instanceof Error ? e.message : String(e);
-      const entry: HistoryEntry = {
-        id: crypto.randomUUID(),
-        query: sql.trim().slice(0, 200),
-        timestamp: new Date(),
-        success: false,
-        executionTime,
-      };
-      setHistory(h => [entry, ...h].slice(0, 200));
-      setLastExecution(Date.now());
-      return { results: [], error: errMsg, executionTime };
+      return { results: [], error: String(e), executionTime };
     }
   }, [refreshSchema]);
 

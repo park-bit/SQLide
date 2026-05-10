@@ -1,0 +1,16 @@
+<svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="db-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#7dd3fc" />
+      <stop offset="25%" stop-color="#38bdf8" />
+      <stop offset="50%" stop-color="#0284c7" />
+      <stop offset="75%" stop-color="#075985" />
+      <stop offset="100%" stop-color="#0c4a6e" />
+    </linearGradient>
+  </defs>
+  <ellipse cx="12" cy="5" rx="9" ry="3" fill="#bae6fd" />
+  <path d="M3 5V19C3 20.66 7.03 22 12 22C16.97 22 21 20.66 21 19V5C21 6.66 16.97 8 12 8C7.03 8 3 6.66 3 5Z" fill="url(#db-grad)" />
+  <path d="M3 8.5C3 10.16 7.03 11.5 12 11.5C16.97 11.5 21 10.16 21 8.5" stroke="#000" stroke-width="0.8" opacity="0.3" />
+  <path d="M3 12C3 13.66 7.03 15 12 15C16.97 15 21 13.66 21 12" stroke="#000" stroke-width="0.8" opacity="0.3" />
+  <path d="M3 15.5C3 17.16 7.03 18.5 12 18.5C16.97 18.5 21 17.16 21 15.5" stroke="#000" stroke-width="0.8" opacity="0.3" />
+</svg>

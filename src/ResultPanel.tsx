@@ -13,11 +13,13 @@ interface ResultPanelProps {
   onClearHistory: () => void;
   onRunHistory: (q: string) => void;
   forcedTab?: string | null;
+  browseResult?: QueryExecResult | null;
+  browseTableName?: string | null;
 }
 
 
 
-type OutputTab = 'results' | 'console' | 'schema' | 'history' | 'diagram';
+type OutputTab = 'results' | 'console' | 'schema' | 'history' | 'diagram' | 'browse';
 
 function fmt(ms: number): string {
   if (ms < 1) return `${(ms * 1000).toFixed(0)}µs`;
@@ -107,7 +109,8 @@ export function exportJSON(result: QueryExecResult): void {
 
 export default function ResultPanel({
   results, error, executionTime, affectedRows,
-  log, schema, history, onClearHistory, onRunHistory, forcedTab
+  log, schema, history, onClearHistory, onRunHistory, forcedTab,
+  browseResult, browseTableName
 }: ResultPanelProps) {
   const [activeTab, setActiveTab] = useState<OutputTab>('results');
 
@@ -157,6 +160,11 @@ export default function ResultPanel({
         <button className={`output-tab ${activeTab === 'diagram' ? 'active' : ''}`} onClick={() => setActiveTab('diagram')}>
           ER Diagram
         </button>
+        {browseTableName && (
+          <button className={`output-tab ${activeTab === 'browse' ? 'active' : ''}`} onClick={() => setActiveTab('browse')} style={{ color: 'var(--success)' }}>
+            Browse: {browseTableName}
+          </button>
+        )}
 
 
         {}
@@ -164,6 +172,11 @@ export default function ResultPanel({
           <div style={{ marginLeft: 'auto', display: 'flex', gap: 4, alignItems: 'center' }}>
             <button className="btn btn-ghost" style={{ padding: '3px 10px', fontSize: 11 }} onClick={() => exportCSV(results[0])}>↓ CSV</button>
             <button className="btn btn-ghost" style={{ padding: '3px 10px', fontSize: 11 }} onClick={() => exportJSON(results[0])}>↓ JSON</button>
+          </div>
+        )}
+        {activeTab === 'browse' && browseResult && (
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: 4, alignItems: 'center' }}>
+            <button className="btn btn-ghost" style={{ padding: '3px 10px', fontSize: 11 }} onClick={() => exportCSV(browseResult)}>↓ CSV</button>
           </div>
         )}
         {activeTab === 'history' && history.length > 0 && (
@@ -308,6 +321,17 @@ export default function ResultPanel({
         {activeTab === 'diagram' && (
           <div style={{ height: '100%', overflow: 'hidden' }}>
             <ERDiagram schema={schema} />
+          </div>
+        )}
+        {activeTab === 'browse' && (
+          <div className="result-container animate-in">
+            {browseResult ? (
+              <ResultTable result={browseResult} idx={0} />
+            ) : (
+              <div className="empty-state">
+                <span>Loading table data...</span>
+              </div>
+            )}
           </div>
         )}
       </div>

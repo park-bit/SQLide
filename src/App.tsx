@@ -178,10 +178,22 @@ function IDE() {
   const [affectedRows, setAffectedRows] = useState<number | undefined>();
   const [running, setRunning] = useState(false);
   const [log, setLog] = useState<LogEntry[]>([]);
+  const [browseResult, setBrowseResult] = useState<QueryExecResult | null>(null);
+  const [browseTableName, setBrowseTableName] = useState<string | null>(null);
 
   const appendLog = useCallback((level: LogEntry['level'], message: string) => {
     setLog(prev => [...prev.slice(-499), { level, message, timestamp: new Date() }]);
   }, []);
+
+  const handleBrowseTable = useCallback(async (name: string) => {
+    setBrowseTableName(name);
+    setResultTabTrigger('browse');
+    setBrowseResult(null);
+    const res = await execute(`SELECT * FROM "${name}" LIMIT 1000`);
+    if (res.results.length > 0) {
+      setBrowseResult(res.results[0]);
+    }
+  }, [execute]);
 
   const runQuery = useCallback(async () => {
     if (!ready || running) return;
@@ -487,7 +499,7 @@ function IDE() {
               {activeSidebarTab === 'explorer' ? (
                 <SchemaExplorer 
                   onQuery={(q) => updateQuery(q, true)} 
-                  onViewData={(t) => setViewingTable(t)} 
+                  onViewData={handleBrowseTable} 
                 />
               ) : (
                 <div style={{ height: '100%', overflow: 'auto', background: '#090a0f' }}>
@@ -575,6 +587,8 @@ function IDE() {
               onClearHistory={() => clearHistory()}
               onRunHistory={loadHistory}
               forcedTab={resultTabTrigger}
+              browseResult={browseResult}
+              browseTableName={browseTableName}
             />
           </div>
         </div>

@@ -123,6 +123,7 @@ function translateMySqlToSqlite(sql: string): string {
 
 export function SqlProvider({ children }: { children: React.ReactNode }) {
   const dbRef = useRef<Database | null>(null);
+  const sqlRef = useRef<SqlJsStatic | null>(null);
   const [ready, setReady] = useState(false);
   const [initError, setInitError] = useState<string | null>(null);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
@@ -136,6 +137,7 @@ export function SqlProvider({ children }: { children: React.ReactNode }) {
           `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.12.0/${file}`,
       }))
       .then((SQL: SqlJsStatic) => {
+        sqlRef.current = SQL;
         dbRef.current = new SQL.Database();
         setReady(true);
       })
@@ -284,7 +286,7 @@ export function SqlProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const importDb = useCallback(async (data: Uint8Array) => {
-    const SQL = (window as any).initSqlJs;
+    const SQL = sqlRef.current;
     if (SQL) {
       dbRef.current = new SQL.Database(data);
       setLastExecution(Date.now());

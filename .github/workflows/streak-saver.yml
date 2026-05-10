@@ -1,0 +1,25 @@
+name: Streak Saver
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # Runs at midnight UTC every day
+  workflow_dispatch: # Allows manual trigger
+
+jobs:
+  commit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Update streak file
+        run: |
+          echo "Last active: $(date)" > streak.txt
+
+      - name: Commit and Push
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add streak.txt
+          git commit -m "chore: keep streak alive [skip ci]" || echo "No changes to commit"
+          git push

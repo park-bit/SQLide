@@ -1,0 +1,45 @@
+name: Enable Speed Insights (Scheduled)
+
+on:
+  schedule:
+    - cron: '0 6 11 5 *' # Runs at 06:00 UTC on May 11th
+  workflow_dispatch: # Allows you to trigger it manually if you want
+
+jobs:
+  upgrade:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install Speed Insights
+        run: npm install @vercel/speed-insights
+
+      - name: Update App.tsx
+        run: |
+          # Add the import at the top
+          sed -i '1i import { SpeedInsights } from "@vercel/speed-insights/react";' src/App.tsx
+          
+          # Add the component after <IDE />
+          sed -i '/<IDE \/>/a \      <SpeedInsights />' src/App.tsx
+
+      - name: Self Destruct & Cleanup
+        run: |
+          rm .github/workflows/enable-speed-insights.yml
+          # If streak.txt exists from your previous tests, delete it too
+          rm -f streak.txt 
+
+      - name: Commit and Push
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action Bot"
+          git add .
+          git commit -m "feat: enable Vercel Speed Insights [scheduled]" || echo "No changes"
+          git push

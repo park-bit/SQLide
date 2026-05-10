@@ -1,4 +1,4 @@
-# SQLide — Professional SQL Workbench IDE
+# SQLide : Professional SQL Workbench IDE
 
 SQLide is a high-performance, aesthetically premium web-based SQL IDE built for speed and privacy. Execute complex queries, visualize ER diagrams, and manage your schemas entirely in the browser with zero latency.
 

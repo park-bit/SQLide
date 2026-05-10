@@ -95,7 +95,7 @@ export default function SqlEditor({
         { token: 'keyword.sql', foreground: '61afef', fontStyle: 'bold' },
         { token: 'string', foreground: 'e5c07b' },
         { token: 'string.sql', foreground: 'e5c07b' },
-        { token: 'number', foreground: 'fde047' },
+        { token: 'number', foreground: 'e2ff31' },
         { token: 'comment', foreground: '5c6370', fontStyle: 'italic' },
         { token: 'operator', foreground: '56b6c2' },
         { token: 'identifier', foreground: 'ffffff' },

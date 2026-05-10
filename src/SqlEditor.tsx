@@ -93,8 +93,8 @@ export default function SqlEditor({
       rules: [
         { token: 'keyword', foreground: '61afef', fontStyle: 'bold' },
         { token: 'keyword.sql', foreground: '61afef', fontStyle: 'bold' },
-        { token: 'string', foreground: 'e5c07b' },
-        { token: 'string.sql', foreground: 'e5c07b' },
+        { token: 'string', foreground: 'e2ff31' },
+        { token: 'string.sql', foreground: 'e2ff31' },
         { token: 'number', foreground: 'e2ff31' },
         { token: 'comment', foreground: '5c6370', fontStyle: 'italic' },
         { token: 'operator', foreground: '56b6c2' },

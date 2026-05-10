@@ -1,8 +1,12 @@
 # SQLide : Professional SQL Workbench IDE
 
-SQLide is a high-performance, aesthetically premium web-based SQL IDE built for speed and privacy. Execute complex queries, visualize ER diagrams, and manage your schemas entirely in the browser with zero latency.
+SQLide is a high-performance, aesthetically premium web-based SQL IDE built for speed and privacy.
 
 ![SQLide Logo](public/logo.svg)
+
+Execute complex queries,
+visualize ER diagrams,
+and manage your schemas entirely in the browser with zero latency.
 
 ## Features
 
@@ -42,4 +46,4 @@ SQLide is a high-performance, aesthetically premium web-based SQL IDE built for 
 This project is licensed under the PolyForm Noncommercial License 1.0.0 - see the [LICENSE](LICENSE) file for details.
 
 ---
-Built by [park-bit](https://github.com/park-bit)
+Built by [park-bit](https://github.com/park-bit); [support me?](https://www.chai4.me/park-bit)

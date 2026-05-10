@@ -2,8 +2,8 @@ name: Enable Speed Insights (Scheduled)
 
 on:
   schedule:
-    - cron: '0 6 11 5 *' # Runs at 06:00 UTC on May 11th
-  workflow_dispatch: # Allows you to trigger it manually if you want
+    - cron: '0 6 11 5 *'
+  workflow_dispatch:
 
 jobs:
   upgrade:

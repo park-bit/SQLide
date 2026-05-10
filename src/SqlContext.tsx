@@ -85,6 +85,36 @@ function loadSqlJsFromCDN(): Promise<SqlJsStatic> {
   });
 }
 
+function translateMySqlToSqlite(sql: string): string {
+  let mapped = sql;
+  
+  // 1. Backticks to Double Quotes (Standard SQL)
+  mapped = mapped.replace(/`/g, '"');
+
+  // 2. AUTO_INCREMENT -> AUTOINCREMENT (and ensure INTEGER type)
+  mapped = mapped.replace(/\bAUTO_INCREMENT\b/gi, 'AUTOINCREMENT');
+  mapped = mapped.replace(/\b(INT|BIGINT|MEDIUMINT|SMALLINT|TINYINT)(\(\d+\))?\s+PRIMARY\s+KEY\s+AUTOINCREMENT\b/gi, 'INTEGER PRIMARY KEY AUTOINCREMENT');
+  mapped = mapped.replace(/\b(INT|BIGINT|MEDIUMINT|SMALLINT|TINYINT)(\(\d+\))?\s+AUTOINCREMENT\b/gi, 'INTEGER AUTOINCREMENT');
+  
+  // 3. Data Types Compatibility
+  mapped = mapped.replace(/\bUNSIGNED\b/gi, '');
+  mapped = mapped.replace(/\bBIGINT(\(\d+\))?/gi, 'INTEGER');
+  mapped = mapped.replace(/\bMEDIUMINT(\(\d+\))?/gi, 'INTEGER');
+  mapped = mapped.replace(/\bSMALLINT(\(\d+\))?/gi, 'INTEGER');
+  mapped = mapped.replace(/\bTINYINT(\(\d+\))?/gi, 'INTEGER');
+  mapped = mapped.replace(/\bDECIMAL(\(\d+(,\d+)?\))?/gi, 'REAL');
+  mapped = mapped.replace(/\bDOUBLE\b/gi, 'REAL');
+  mapped = mapped.replace(/\bJSON\b/gi, 'TEXT');
+  
+  // 4. Common MySQL Functions to SQLite equivalents
+  mapped = mapped.replace(/\bNOW\(\)/gi, "datetime('now')");
+  mapped = mapped.replace(/\bCURDATE\(\)/gi, "date('now')");
+  mapped = mapped.replace(/\bCURTIME\(\)/gi, "time('now')");
+  mapped = mapped.replace(/\bRAND\(\)/gi, "random()");
+
+  return mapped;
+}
+
 export function SqlProvider({ children }: { children: React.ReactNode }) {
   const dbRef = useRef<Database | null>(null);
   const [ready, setReady] = useState(false);
@@ -154,10 +184,11 @@ export function SqlProvider({ children }: { children: React.ReactNode }) {
     } catch { /* ignore */ }
   }, []);
 
-  const execute = useCallback(async (sql: string): Promise<QueryResult> => {
+  const execute = useCallback(async (rawSql: string): Promise<QueryResult> => {
     const db = dbRef.current;
     if (!db) return { results: [], error: 'Database not ready', executionTime: 0 };
 
+    const sql = translateMySqlToSqlite(rawSql);
     const t0 = performance.now();
     try {
       const results: QueryExecResult[] = db.exec(sql);

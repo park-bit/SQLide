@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { SpeedInsights } from "@vercel/speed-insights/react";
 import './App.css';
 import SqlEditor from './SqlEditor';
 import ResultPanel from './ResultPanel';
@@ -722,6 +723,7 @@ export default function App() {
   return (
     <SqlProvider>
       <IDE />
+      <SpeedInsights />
     </SqlProvider>
   );
 }

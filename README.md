@@ -7,6 +7,10 @@ SQLide is a high-performance, aesthetically premium web-based SQL IDE built for 
 Execute complex queries,
 visualize ER diagrams,
 and manage your schemas entirely in the browser with zero latency.
+website live [here](https://sqlide.is-a.dev)
+
+[website demo.webm](https://github.com/user-attachments/assets/023cdd55-0378-422b-be7a-c4d4b1089215)
+
 
 ## Features
 
@@ -122,4 +126,4 @@ and manage your schemas entirely in the browser with zero latency.
 This project is licensed under the PolyForm Noncommercial License 1.0.0 - see the [LICENSE](LICENSE) file for details.
 
 ---
-Built by [park-bit](https://github.com/park-bit); [support me?](https://www.chai4.me/park-bit)
+Built by [park-bit](https://github.com/park-bit); [support me?](https://www.chai4.me/park-bit); [website-link](https://sqlide.is-a.dev)

@@ -7,7 +7,7 @@ SQLide is a high-performance, aesthetically premium web-based SQL IDE built for 
 Execute complex queries,
 visualize ER diagrams,
 and manage your schemas entirely in the browser with zero latency.
-website live [here](https://sqlide.is-a.dev)
+website live [here](https://sql-ide.vercel.app)
 
 [website demo.webm](https://github.com/user-attachments/assets/023cdd55-0378-422b-be7a-c4d4b1089215)
 

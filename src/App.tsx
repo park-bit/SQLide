@@ -692,6 +692,20 @@ function IDE() {
                 </button>
               </div>
             </div>
+            <div className="settings-row">
+              <span className="settings-label">Other IDEs</span>
+              <div style={{ display: 'flex', gap: 4 }}>
+                <a 
+                  href="https://python-ide.vercel.app/" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="btn btn-ghost"
+                  style={{ fontSize: 11, padding: '4px 10px', textDecoration: 'none' }}
+                >
+                  Python IDE
+                </a>
+              </div>
+            </div>
           </div>
         </div>
       )}

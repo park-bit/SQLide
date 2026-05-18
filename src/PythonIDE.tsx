@@ -257,10 +257,8 @@ export default function PythonIDE({ onSwitchToSql }: { onSwitchToSql: () => void
     <div className={`app-shell layout-${outputPosition}`}>
       <nav className="topnav">
         <div className="topnav__logo" style={{ cursor: 'pointer' }} onClick={onSwitchToSql}>
-          <div className="topnav__logo-icon" style={{ background: '#3776ab', padding: 2 }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 2C7.58 2 4 5.58 4 10V14C4 18.42 7.58 22 12 22C16.42 22 20 18.42 20 14V10C20 5.58 16.42 2 12 2ZM12 20C8.69 20 6 17.31 6 14V10C6 6.69 8.69 4 12 4C15.31 4 18 6.69 18 10V14C18 17.31 15.31 20 12 20Z" fill="white"/>
-            </svg>
+          <div className="topnav__logo-icon">
+            <img src="/python-logo.png" alt="PythonIDE" style={{ width: 24, height: 24, borderRadius: 4, display: 'block' }} />
           </div>
           <span className="topnav__logo-name">Python<span>IDE</span></span>
         </div>

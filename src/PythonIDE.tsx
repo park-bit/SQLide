@@ -61,6 +61,18 @@ export default function PythonIDE({ onSwitchToSql }: { onSwitchToSql: () => void
   const [log, setLog] = useState<{level: string, message: string, timestamp: Date}[]>([]);
   const [errorLine, setErrorLine] = useState<number | undefined>();
 
+  useEffect(() => {
+    fetch('https://api.kanye.rest/')
+      .then(r => r.json())
+      .then(data => {
+        const kanyeQuote = `# "${data.quote}"\n# ~Kanye West\n\nprint("Welcome to PythonIDE!")`;
+        setTabs(prev => prev.map(t => 
+          (t.id === '1' && t.query === SNIPPETS['New Script']) ? { ...t, query: kanyeQuote } : t
+        ));
+      })
+      .catch(err => console.error('Kanye was not feeling it today:', err));
+  }, []);
+
   const appendLog = useCallback((level: string, message: string) => {
     setLog(prev => [...prev.slice(-499), { level, message, timestamp: new Date() }]);
   }, []);
@@ -178,6 +190,38 @@ export default function PythonIDE({ onSwitchToSql }: { onSwitchToSql: () => void
     setSnippetOpen(false);
   }, [activeTabId]);
 
+  const formatCode = useCallback(() => {
+    let code = activeTab.query;
+    code = code.replace(/\t/g, '    ');
+    code = code.split('\n').map(line => line.trimEnd()).join('\n');
+    updateQuery(code);
+  }, [activeTab.query, updateQuery]);
+
+  const handleDownload = useCallback(() => {
+    const code = activeTab.query;
+    const blob = new Blob([code], { type: 'text/x-python' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = activeTab.name;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [activeTab]);
+
+  const handleImport = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const text = reader.result as string;
+      const id = crypto.randomUUID();
+      setTabs(prev => [...prev, { id, name: file.name, query: text }]);
+      setActiveTabId(id);
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  }, []);
+
   const shareUrl = `${window.location.origin}${window.location.pathname}?py=${btoa(encodeURIComponent(activeTab.query))}`;
 
   useEffect(() => {
@@ -263,6 +307,12 @@ export default function PythonIDE({ onSwitchToSql }: { onSwitchToSql: () => void
             </svg>
             Snippets
           </button>
+          <button id="btn-format" className="btn btn-ghost" onClick={formatCode} title="Format Python">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="21" y1="10" x2="7" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/>
+              <line x1="21" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="7" y2="18"/>
+            </svg>
+          </button>
           
           <div className="topnav__divider" />
           
@@ -294,12 +344,52 @@ export default function PythonIDE({ onSwitchToSql }: { onSwitchToSql: () => void
               <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
             </svg>
           </button>
+          <label className="btn btn-ghost" title="Upload Script (.py)" style={{ cursor: 'pointer' }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            <input type="file" accept=".py,.txt" onChange={handleImport} style={{ display: 'none' }} />
+          </label>
+          <button id="btn-download" className="btn btn-ghost" onClick={handleDownload} title="Download Script (.py)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+          </button>
           <button id="btn-settings" className="btn btn-ghost" onClick={() => setSettingsOpen(true)} title="Settings">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
               <circle cx="12" cy="12" r="3"/>
             </svg>
           </button>
+          
+          <a 
+            href="https://www.chai4.me/park-bit" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="support-btn-badge"
+            title="Support park-bit on Chai4Me"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'rgba(255,255,255,0.05)',
+              padding: '0 14px',
+              borderRadius: '20px',
+              textDecoration: 'none',
+              border: '1px solid rgba(255,255,255,0.1)',
+              boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+              transition: 'all 0.2s',
+              marginRight: '8px',
+              height: '32px'
+            }}
+          >
+            <img src="https://chai4.me/icons/wordmark.png" alt="Chai4Me" style={{ height: 16, objectFit: 'contain', marginRight: '8px', filter: 'brightness(0) invert(1)' }} />
+            <span style={{ color: '#cbd5e1', fontFamily: 'var(--font-sans)', fontSize: '11px', fontWeight: '600' }}>@park-bit</span>
+          </a>
           
           <button
             id="btn-run"

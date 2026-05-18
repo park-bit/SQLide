@@ -187,7 +187,7 @@ export default function PythonIDE({ onSwitchToSql }: { onSwitchToSql: () => void
     // A placeholder for formatting logic
   }, []);
 
-  const shareUrl = \`\${window.location.origin}\${window.location.pathname}?py=\${btoa(encodeURIComponent(activeTab.query))}\`;
+  const shareUrl = `${window.location.origin}${window.location.pathname}?py=${btoa(encodeURIComponent(activeTab.query))}`;
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -219,7 +219,7 @@ export default function PythonIDE({ onSwitchToSql }: { onSwitchToSql: () => void
   }
 
   return (
-    <div className={\`app-shell layout-\${outputPosition}\`}>
+    <div className={`app-shell layout-${outputPosition}`}>
       <nav className="topnav">
         <div className="topnav__logo" style={{ cursor: 'pointer' }} onClick={onSwitchToSql}>
           <div className="topnav__logo-icon" style={{ background: '#3776ab', padding: 2 }}>
@@ -235,8 +235,8 @@ export default function PythonIDE({ onSwitchToSql }: { onSwitchToSql: () => void
           {tabs.map(tab => (
             <button
               key={tab.id}
-              id={\`tab-\${tab.id}\`}
-              className={\`topnav__tab \${tab.id === activeTabId ? 'active' : ''}\`}
+              id={`tab-${tab.id}`}
+              className={`topnav__tab ${tab.id === activeTabId ? 'active' : ''}`}
               onClick={() => setActiveTabId(tab.id)}
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -276,7 +276,7 @@ export default function PythonIDE({ onSwitchToSql }: { onSwitchToSql: () => void
           <div className="topnav__divider" />
           
           <button 
-            className={\`btn btn-ghost \${outputPosition === 'bottom' ? 'active' : ''}\`} 
+            className={`btn btn-ghost ${outputPosition === 'bottom' ? 'active' : ''}`} 
             onClick={() => setOutputPosition('bottom')} title="Output at bottom"
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -285,7 +285,7 @@ export default function PythonIDE({ onSwitchToSql }: { onSwitchToSql: () => void
             </svg>
           </button>
           <button 
-            className={\`btn btn-ghost \${outputPosition === 'right' ? 'active' : ''}\`} 
+            className={`btn btn-ghost ${outputPosition === 'right' ? 'active' : ''}`} 
             onClick={() => setOutputPosition('right')} title="Output at right"
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -312,7 +312,7 @@ export default function PythonIDE({ onSwitchToSql }: { onSwitchToSql: () => void
           
           <button
             id="btn-run"
-            className={\`btn btn-run \${running ? 'running' : ''}\`}
+            className={`btn btn-run ${running ? 'running' : ''}`}
             onClick={runQuery}
             disabled={running || !ready}
           >
@@ -321,7 +321,7 @@ export default function PythonIDE({ onSwitchToSql }: { onSwitchToSql: () => void
         </div>
       </nav>
 
-      <div className={\`content-area pos-\${outputPosition}\`}>
+      <div className={`content-area pos-${outputPosition}`}>
         {sidebarOpen && (
           <aside className="sidebar">
             <div className="sidebar__tabs">
@@ -394,7 +394,7 @@ export default function PythonIDE({ onSwitchToSql }: { onSwitchToSql: () => void
           </div>
 
           <div
-            className={\`resizer \${dragging ? 'dragging' : ''}\`}
+            className={`resizer ${dragging ? 'dragging' : ''}`}
             onMouseDown={onMouseDown}
             title="Drag to resize"
           />
@@ -498,14 +498,14 @@ export default function PythonIDE({ onSwitchToSql }: { onSwitchToSql: () => void
               <span className="settings-label">Interface Theme</span>
               <div style={{ display: 'flex', gap: 4 }}>
                 <button 
-                  className={\`btn btn-ghost \${theme === 'dark' ? 'active' : ''}\`}
+                  className={`btn btn-ghost ${theme === 'dark' ? 'active' : ''}`}
                   onClick={() => setTheme('dark')}
                   style={{ fontSize: 11, padding: '4px 10px' }}
                 >
                   Classic
                 </button>
                 <button 
-                  className={\`btn btn-ghost \${theme === 'noir' ? 'active' : ''}\`}
+                  className={`btn btn-ghost ${theme === 'noir' ? 'active' : ''}`}
                   onClick={() => setTheme('noir')}
                   style={{ fontSize: 11, padding: '4px 10px' }}
                 >

@@ -481,28 +481,30 @@ export default function PythonIDE({ onSwitchToSql }: { onSwitchToSql: () => void
           />
 
           <div className="output-section" style={outputPosition === 'bottom' ? { height: outputHeight } : { width: outputHeight }}>
-            <div className="panel" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-              <div className="panel-tabs">
-                <button className="panel-tab active">Console</button>
-                <button className="btn-ghost" style={{ marginLeft: 'auto', padding: '2px 8px', fontSize: 11 }} onClick={() => setLog([])}>
-                  Clear
-                </button>
+            <div className="output-panel" style={{ height: '100%' }}>
+              <div className="output-tabs">
+                <button className="output-tab active">Console</button>
+                <div style={{ marginLeft: 'auto', display: 'flex', gap: 4, alignItems: 'center' }}>
+                  <button className="btn btn-ghost" style={{ padding: '3px 10px', fontSize: 11 }} onClick={() => setLog([])}>
+                    Clear
+                  </button>
+                </div>
               </div>
-              <div className="panel-content" style={{ padding: 12, overflow: 'auto', fontFamily: 'var(--font-mono)', fontSize: 13 }}>
-                {log.length === 0 ? (
-                  <div style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>Output will appear here...</div>
-                ) : (
-                  log.map((l, i) => (
-                    <div key={i} style={{ 
-                      color: l.level === 'error' ? 'var(--error)' : l.level === 'ok' ? 'var(--success)' : 'var(--text-primary)',
-                      marginBottom: 4,
-                      whiteSpace: 'pre-wrap',
-                      wordBreak: 'break-all'
-                    }}>
-                      {l.message}
+              <div className="output-body">
+                <div className="console-body animate-in">
+                  {log.length === 0 ? (
+                    <div className="empty-state">
+                      <span>Output will appear here...</span>
                     </div>
-                  ))
-                )}
+                  ) : (
+                    log.map((l, i) => (
+                      <div key={i} className={`log-${l.level}`}>
+                        <span className="log-ts">[{l.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}]</span>
+                        {l.message}
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
             </div>
           </div>

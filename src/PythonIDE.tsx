@@ -144,7 +144,6 @@ export default function PythonIDE({ onSwitchToSql }: { onSwitchToSql: () => void
       }
       appendLog('ok', `OK · Execution completed in ${(t1 - t0).toFixed(1)}ms`);
     } catch (err: any) {
-      const t1 = performance.now();
       const errStr = String(err);
       appendLog('error', errStr);
       

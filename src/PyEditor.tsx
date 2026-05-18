@@ -24,7 +24,6 @@ export default function PyEditor({
   const editorRef = useRef<MonacoInstance | null>(null);
   const monacoRef = useRef<MonacoInstance | null>(null);
   const decorationRef = useRef<string[]>([]);
-  const disposableRef = useRef<{ dispose: () => void } | null>(null);
 
   const onRunRef = useRef(onRun);
   onRunRef.current = onRun;

@@ -59,7 +59,6 @@ export default function PythonIDE({ onSwitchToSql }: { onSwitchToSql: () => void
 
   const [running, setRunning] = useState(false);
   const [log, setLog] = useState<{level: string, message: string, timestamp: Date}[]>([]);
-  const [execTime, setExecTime] = useState<number | undefined>();
   const [errorLine, setErrorLine] = useState<number | undefined>();
 
   const appendLog = useCallback((level: string, message: string) => {
@@ -132,7 +131,6 @@ export default function PythonIDE({ onSwitchToSql }: { onSwitchToSql: () => void
     if (!code) return;
     setRunning(true);
     setErrorLine(undefined);
-    setExecTime(undefined);
     const t0 = performance.now();
     
     appendLog('ok', `> Executing ${activeTab.name}...`);
@@ -141,14 +139,12 @@ export default function PythonIDE({ onSwitchToSql }: { onSwitchToSql: () => void
       // Clear variables from previous runs in the namespace if desired, but retaining state is common in IDEs.
       const res = await pyodideRef.current.runPythonAsync(code);
       const t1 = performance.now();
-      setExecTime(t1 - t0);
       if (res !== undefined) {
         appendLog('info', String(res));
       }
       appendLog('ok', `OK · Execution completed in ${(t1 - t0).toFixed(1)}ms`);
     } catch (err: any) {
       const t1 = performance.now();
-      setExecTime(t1 - t0);
       const errStr = String(err);
       appendLog('error', errStr);
       
@@ -182,10 +178,6 @@ export default function PythonIDE({ onSwitchToSql }: { onSwitchToSql: () => void
     setTabs(prev => prev.map(t => t.id === activeTabId ? { ...t, query: SNIPPETS[name] } : t));
     setSnippetOpen(false);
   }, [activeTabId]);
-
-  const formatCode = useCallback(() => {
-    // A placeholder for formatting logic
-  }, []);
 
   const shareUrl = `${window.location.origin}${window.location.pathname}?py=${btoa(encodeURIComponent(activeTab.query))}`;
 

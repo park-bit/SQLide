@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState, useMemo, useEffect } from 'react';
+import { useCallback, useRef, useState, useMemo, useEffect, forwardRef, useImperativeHandle } from 'react';
 import Editor from '@monaco-editor/react';
 
 interface SchemaRef {
@@ -6,10 +6,15 @@ interface SchemaRef {
   columns: { name: string }[];
 }
 
+export interface SqlEditorHandle {
+  /** Returns the current selection's text if non-empty, otherwise undefined (caller should run the full query). */
+  getSelectionText: () => string | undefined;
+}
+
 interface SqlEditorProps {
   value: string;
   onChange: (value: string) => void;
-  onRun: () => void;
+  onRun: (selectedText?: string) => void;
   height?: string;
   fontSize?: number;
   wordWrap?: boolean;
@@ -22,6 +27,7 @@ interface SqlEditorProps {
 const SQL_KEYWORDS = [
   'SELECT', 'FROM', 'WHERE', 'INSERT', 'INTO', 'VALUES', 'UPDATE', 'SET', 'DELETE',
   'CREATE', 'TABLE', 'DROP', 'ALTER', 'ADD', 'COLUMN', 'INDEX', 'VIEW', 'TRIGGER',
+  'DATABASE', 'SCHEMA', 'USE', 'DATABASES', 'SHOW', 'TABLES',
   'JOIN', 'LEFT', 'RIGHT', 'INNER', 'OUTER', 'FULL', 'CROSS', 'ON', 'AS',
   'AND', 'OR', 'NOT', 'IN', 'IS', 'NULL', 'LIKE', 'BETWEEN', 'EXISTS', 'ANY', 'ALL',
   'ORDER', 'BY', 'GROUP', 'HAVING', 'LIMIT', 'OFFSET', 'DISTINCT', 'UNION', 'INTERSECT', 'EXCEPT',
@@ -34,6 +40,17 @@ const SQL_KEYWORDS = [
   'EXPLAIN', 'ANALYZE', 'VACUUM', 'PRAGMA',
 ];
 
+// Multi-word snippets worth suggesting as a single completion, since typing
+// "CREATE" alone shouldn't force picking DATABASE vs TABLE vs INDEX one keyword at a time.
+const SQL_SNIPPETS: { label: string; insertText: string; detail: string }[] = [
+  { label: 'CREATE DATABASE', insertText: 'CREATE DATABASE ${1:name};', detail: 'New database' },
+  { label: 'CREATE DATABASE IF NOT EXISTS', insertText: 'CREATE DATABASE IF NOT EXISTS ${1:name};', detail: 'New database (safe)' },
+  { label: 'DROP DATABASE', insertText: 'DROP DATABASE ${1:name};', detail: 'Delete a database' },
+  { label: 'USE', insertText: 'USE ${1:database};', detail: 'Switch active database' },
+  { label: 'SHOW DATABASES', insertText: 'SHOW DATABASES;', detail: 'List all databases' },
+  { label: 'CREATE TABLE', insertText: 'CREATE TABLE ${1:name} (\n  id INTEGER PRIMARY KEY AUTOINCREMENT,\n  $0\n);', detail: 'New table' },
+];
+
 const SQL_FUNCTIONS = [
   'COUNT', 'SUM', 'AVG', 'MIN', 'MAX', 'LENGTH', 'UPPER', 'LOWER', 'TRIM', 'LTRIM', 'RTRIM',
   'SUBSTR', 'SUBSTRING', 'REPLACE', 'INSTR', 'PRINTF', 'FORMAT', 'DATE', 'TIME', 'DATETIME',
@@ -43,11 +60,11 @@ const SQL_FUNCTIONS = [
 
 type MonacoInstance = any;
 
-export default function SqlEditor({
+export default forwardRef<SqlEditorHandle, SqlEditorProps>(function SqlEditor({
   value, onChange, onRun, height = '100%',
   fontSize = 14, wordWrap = false, minimap = false, schema = [],
   theme = 'dark', errorLine,
-}: SqlEditorProps) {
+}: SqlEditorProps, ref) {
   const [cursorPos, setCursorPos] = useState({ line: 1, col: 1 });
   const editorRef = useRef<MonacoInstance | null>(null);
   const monacoRef = useRef<MonacoInstance | null>(null);
@@ -56,6 +73,17 @@ export default function SqlEditor({
 
   const onRunRef = useRef(onRun);
   onRunRef.current = onRun;
+
+  useImperativeHandle(ref, () => ({
+    getSelectionText: () => {
+      const editor = editorRef.current;
+      if (!editor) return undefined;
+      const selection = editor.getSelection();
+      if (!selection || selection.isEmpty()) return undefined;
+      const text = editor.getModel()?.getValueInRange(selection) ?? '';
+      return text.trim() || undefined;
+    },
+  }), []);
 
   useEffect(() => {
     if (!editorRef.current || !monacoRef.current) return;
@@ -165,6 +193,15 @@ export default function SqlEditor({
           endColumn: word.endColumn,
         };
         const suggestions = [
+          ...SQL_SNIPPETS.map((s) => ({
+            label: s.label,
+            kind: monaco.languages.CompletionItemKind.Snippet,
+            insertText: s.insertText,
+            insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+            range,
+            sortText: '0a_' + s.label,
+            detail: s.detail,
+          })),
           ...SQL_KEYWORDS.map((kw: string) => ({
             label: kw,
             kind: monaco.languages.CompletionItemKind.Keyword,
@@ -203,7 +240,16 @@ export default function SqlEditor({
 
     editor.addCommand(
       monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter,
-      () => onRunRef.current()
+      () => {
+        const selection = editor.getSelection();
+        const hasSelection = selection && !selection.isEmpty();
+        if (hasSelection) {
+          const selectedText = editor.getModel()?.getValueInRange(selection) ?? '';
+          onRunRef.current(selectedText.trim() || undefined);
+        } else {
+          onRunRef.current();
+        }
+      }
     );
 
     editor.onDidChangeCursorPosition((e: MonacoInstance) => {
@@ -270,4 +316,4 @@ export default function SqlEditor({
       </div>
     </div>
   );
-}
+});

@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import './App.css';
 import SqlEditor from './SqlEditor';
+import type { SqlEditorHandle } from './SqlEditor';
 import ResultPanel from './ResultPanel';
 import { SqlProvider, useSql } from './SqlContext';
 import type { LogEntry, QueryExecResult } from './SqlContext';
@@ -227,14 +228,17 @@ function IDE() {
     }
   }, [execute]);
 
-  const runQuery = useCallback(async () => {
+  const sqlEditorRef = useRef<SqlEditorHandle>(null);
+
+  const runQuery = useCallback(async (overrideQuery?: string) => {
     if (!ready || running) return;
-    const query = activeTab.query.trim();
+    const query = (overrideQuery ?? activeTab.query).trim();
     if (!query) return;
     setRunning(true);
     setExecError(undefined);
     setErrorLine(undefined);
-    appendLog('info', `Executing: ${query.slice(0, 120)}${query.length > 120 ? '...' : ''}`);
+    const isPartial = overrideQuery !== undefined;
+    appendLog('info', `Executing${isPartial ? ' (selection)' : ''}: ${query.slice(0, 120)}${query.length > 120 ? '...' : ''}`);
     try {
       const res = await execute(query);
       setResults(res.results);
@@ -252,9 +256,11 @@ function IDE() {
 
       if (res.error) {
         appendLog('error', `Error: ${res.error}`);
-        const lineMatch = res.error.match(/approx\. line (\d+)/);
-        if (lineMatch) {
-          setErrorLine(parseInt(lineMatch[1]));
+        if (!isPartial) {
+          const lineMatch = res.error.match(/approx\. line (\d+)/);
+          if (lineMatch) {
+            setErrorLine(parseInt(lineMatch[1]));
+          }
         }
       } else {
         const rowCount = res.results.reduce((s, r) => s + r.values.length, 0);
@@ -498,8 +504,9 @@ function IDE() {
           <button
             id="btn-run"
             className={`btn btn-run ${running ? 'running' : ''}`}
-            onClick={runQuery}
+            onClick={() => runQuery(sqlEditorRef.current?.getSelectionText())}
             disabled={running || !ready}
+            title="Run (or run just the selected text)"
           >
             {running ? <><span className="spinner" />Running…</> : <>▶ Run</>}
           </button>
@@ -637,6 +644,7 @@ function IDE() {
 
             <div className="editor-wrap">
               <SqlEditor
+                ref={sqlEditorRef}
                 value={activeTab.query}
                 onChange={updateQuery}
                 onRun={runQuery}

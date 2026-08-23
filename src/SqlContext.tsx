@@ -157,6 +157,8 @@ const RE_CREATE_DB = /^CREATE\s+(?:DATABASE|SCHEMA)\s+(?:IF\s+NOT\s+EXISTS\s+)?(
 const RE_DROP_DB = /^DROP\s+(?:DATABASE|SCHEMA)\s+(?:IF\s+EXISTS\s+)?([`"']?[\w-]+[`"']?)\s*;?\s*$/i;
 const RE_USE_DB = /^USE\s+([`"']?[\w-]+[`"']?)\s*;?\s*$/i;
 const RE_SHOW_DBS = /^SHOW\s+DATABASES\s*;?\s*$/i;
+const RE_SHOW_TABLES = /^SHOW\s+(?:FULL\s+)?TABLES\s*;?\s*$/i;
+const RE_DESCRIBE = /^(?:DESCRIBE|DESC)\s+([`"']?[\w-]+[`"']?)\s*;?\s*$/i;
 
 export function SqlProvider({ children }: { children: React.ReactNode }) {
   const sqlRef = useRef<SqlJsStatic | null>(null);
@@ -361,6 +363,53 @@ export function SqlProvider({ children }: { children: React.ReactNode }) {
             columns: ['Database'],
             values: Array.from(databasesRef.current.keys()).map(n => [n]),
           });
+          continue;
+        }
+
+        if (RE_SHOW_TABLES.test(forMatch)) {
+          try {
+            const res = dbRef.current.exec(
+              `SELECT name FROM sqlite_master WHERE type IN ('table','view') AND name NOT LIKE 'sqlite_%' ORDER BY name`
+            );
+            const values = res[0]?.values ?? [];
+            allResults.push({
+              columns: [`Tables_in_${currentDbNameRef.current}`],
+              values,
+            });
+          } catch (e: any) {
+            const executionTime = performance.now() - t0;
+            return { results: allResults, error: String(e), executionTime };
+          }
+          continue;
+        }
+
+        if ((m = forMatch.match(RE_DESCRIBE))) {
+          const tname = unquoteIdent(m[1]);
+          try {
+            const colRes = dbRef.current.exec(`PRAGMA table_info("${tname}")`);
+            const rows = colRes[0]?.values ?? [];
+            if (rows.length === 0) {
+              const executionTime = performance.now() - t0;
+              const entry: HistoryEntry = { id: crypto.randomUUID(), query: trimmed.slice(0, 200), timestamp: new Date(), success: false, executionTime };
+              setHistory(h => [entry, ...h].slice(0, 200));
+              setLastExecution(Date.now());
+              return { results: allResults, error: `table "${tname}" does not exist`, executionTime };
+            }
+            allResults.push({
+              columns: ['Field', 'Type', 'Null', 'Key', 'Default', 'Extra'],
+              values: rows.map((c: Array<string | number | null>) => [
+                c[1] as string,
+                (c[2] as string) || 'TEXT',
+                (c[3] as number) === 1 ? 'NO' : 'YES',
+                (c[5] as number) > 0 ? 'PRI' : '',
+                c[4] as string | null,
+                (c[5] as number) > 0 && ((c[2] as string) || '').toUpperCase().includes('INT') ? 'AUTOINCREMENT' : '',
+              ]),
+            });
+          } catch (e: any) {
+            const executionTime = performance.now() - t0;
+            return { results: allResults, error: String(e), executionTime };
+          }
           continue;
         }
         // --- End interception ---

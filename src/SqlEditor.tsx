@@ -27,7 +27,7 @@ interface SqlEditorProps {
 const SQL_KEYWORDS = [
   'SELECT', 'FROM', 'WHERE', 'INSERT', 'INTO', 'VALUES', 'UPDATE', 'SET', 'DELETE',
   'CREATE', 'TABLE', 'DROP', 'ALTER', 'ADD', 'COLUMN', 'INDEX', 'VIEW', 'TRIGGER',
-  'DATABASE', 'SCHEMA', 'USE', 'DATABASES', 'SHOW', 'TABLES',
+  'DATABASE', 'SCHEMA', 'USE', 'DATABASES', 'SHOW', 'TABLES', 'DESCRIBE', 'DESC',
   'JOIN', 'LEFT', 'RIGHT', 'INNER', 'OUTER', 'FULL', 'CROSS', 'ON', 'AS',
   'AND', 'OR', 'NOT', 'IN', 'IS', 'NULL', 'LIKE', 'BETWEEN', 'EXISTS', 'ANY', 'ALL',
   'ORDER', 'BY', 'GROUP', 'HAVING', 'LIMIT', 'OFFSET', 'DISTINCT', 'UNION', 'INTERSECT', 'EXCEPT',
@@ -48,6 +48,8 @@ const SQL_SNIPPETS: { label: string; insertText: string; detail: string }[] = [
   { label: 'DROP DATABASE', insertText: 'DROP DATABASE ${1:name};', detail: 'Delete a database' },
   { label: 'USE', insertText: 'USE ${1:database};', detail: 'Switch active database' },
   { label: 'SHOW DATABASES', insertText: 'SHOW DATABASES;', detail: 'List all databases' },
+  { label: 'SHOW TABLES', insertText: 'SHOW TABLES;', detail: 'List tables in current database' },
+  { label: 'DESCRIBE', insertText: 'DESCRIBE ${1:table};', detail: 'Show table structure' },
   { label: 'CREATE TABLE', insertText: 'CREATE TABLE ${1:name} (\n  id INTEGER PRIMARY KEY AUTOINCREMENT,\n  $0\n);', detail: 'New table' },
 ];
 

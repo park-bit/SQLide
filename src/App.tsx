@@ -516,52 +516,80 @@ function IDE() {
       <div className={`content-area pos-${outputPosition}`}>
         {sidebarOpen && (
           <aside className="sidebar">
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '8px 8px 0 8px' }}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" style={{ flexShrink: 0 }}>
-                <ellipse cx="12" cy="5" rx="9" ry="3"/>
-                <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
-                <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
-              </svg>
-              <select
-                value={currentDatabase}
-                onChange={e => useDatabase(e.target.value)}
-                title="Active database"
-                style={{
-                  flex: 1,
-                  background: 'var(--bg-secondary, #1a1d24)',
-                  color: 'var(--text-primary)',
-                  border: '1px solid var(--border-color, rgba(255,255,255,0.1))',
-                  borderRadius: 4,
-                  fontSize: 11,
-                  fontFamily: 'var(--font-mono)',
-                  padding: '3px 4px',
-                }}
-              >
-                {databases.map(name => (
-                  <option key={name} value={name}>{name}</option>
-                ))}
-              </select>
-              {databases.length > 1 && (
+            <div style={{ padding: '8px 8px 0 8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" style={{ flexShrink: 0 }}>
+                  <ellipse cx="12" cy="5" rx="9" ry="3"/>
+                  <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+                  <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+                </svg>
+                <span style={{ flex: 1, fontSize: 10, fontWeight: 700, letterSpacing: '0.05em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                  Databases ({databases.length})
+                </span>
                 <button
                   className="btn-icon"
-                  title={`Drop database "${currentDatabase}"`}
-                  onClick={e => handleDropDatabase(currentDatabase, e)}
+                  title="Create new database"
+                  onClick={() => setNewDbOpen(true)}
+                  style={{ width: 18, height: 18 }}
                 >
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <polyline points="3 6 5 6 21 6"/>
-                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
                   </svg>
                 </button>
-              )}
-              <button
-                className="btn-icon"
-                title="Create new database"
-                onClick={() => setNewDbOpen(true)}
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                </svg>
-              </button>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginBottom: 8, maxHeight: 140, overflowY: 'auto' }}>
+                {databases.map(name => (
+                  <div
+                    key={name}
+                    onClick={() => name !== currentDatabase && useDatabase(name)}
+                    title={name === currentDatabase ? `Active database` : `Switch to "${name}"`}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      padding: '4px 6px',
+                      borderRadius: 4,
+                      cursor: name === currentDatabase ? 'default' : 'pointer',
+                      background: name === currentDatabase ? 'var(--accent, #4f8ef7)22' : 'transparent',
+                      border: name === currentDatabase ? '1px solid var(--accent, #4f8ef7)55' : '1px solid transparent',
+                    }}
+                  >
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={name === currentDatabase ? 'var(--accent, #4f8ef7)' : 'var(--text-muted)'} strokeWidth="2" style={{ flexShrink: 0 }}>
+                      <ellipse cx="12" cy="5" rx="9" ry="3"/>
+                      <path d="M3 5v6c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+                      <path d="M3 11v6c0 1.66 4 3 9 3s9-1.34 9-3v-6"/>
+                    </svg>
+                    <span style={{
+                      flex: 1,
+                      fontSize: 11,
+                      fontFamily: 'var(--font-mono)',
+                      color: name === currentDatabase ? 'var(--text-primary)' : 'var(--text-secondary)',
+                      fontWeight: name === currentDatabase ? 600 : 400,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}>
+                      {name}
+                    </span>
+                    {name === currentDatabase && (
+                      <span style={{ fontSize: 9, color: 'var(--accent, #4f8ef7)', fontWeight: 700 }}>ACTIVE</span>
+                    )}
+                    {databases.length > 1 && (
+                      <button
+                        className="btn-icon"
+                        title={`Drop database "${name}"`}
+                        onClick={e => handleDropDatabase(name, e)}
+                        style={{ width: 16, height: 16, flexShrink: 0 }}
+                      >
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polyline points="3 6 5 6 21 6"/>
+                          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
             <div className="sidebar__tabs">
               <button 

@@ -115,6 +115,30 @@ function translateMySqlToSqlite(sql: string): string {
   return mapped;
 }
 
+// Strips leading `-- comment` lines and block comments so db-management regexes
+// can match even when a statement is preceded by comments (no semicolon between
+// a comment and the next statement, so they land in the same chunk).
+function stripLeadingComments(s: string): string {
+  let out = s;
+  let changed = true;
+  while (changed) {
+    changed = false;
+    const trimmedStart = out.replace(/^\s+/, '');
+    if (trimmedStart.startsWith('--')) {
+      const nl = trimmedStart.indexOf('\n');
+      out = nl === -1 ? '' : trimmedStart.slice(nl + 1);
+      changed = true;
+    } else if (trimmedStart.startsWith('/*')) {
+      const end = trimmedStart.indexOf('*/');
+      out = end === -1 ? '' : trimmedStart.slice(end + 2);
+      changed = true;
+    } else {
+      out = trimmedStart;
+    }
+  }
+  return out.trim();
+}
+
 // Strips a wrapping quote/backtick pair from an identifier, e.g. `foo`, "foo", 'foo' -> foo
 function unquoteIdent(raw: string): string {
   const t = raw.trim();
@@ -274,9 +298,15 @@ export function SqlProvider({ children }: { children: React.ReactNode }) {
         if (!trimmed) continue;
 
         // --- Intercept database-management statements before they hit sql.js ---
+        // Strip leading comments so a `-- note` line above CREATE/USE/DROP DATABASE
+        // doesn't prevent the match (comments don't end a statement, so they land
+        // in the same chunk as the SQL that follows them).
+        const forMatch = stripLeadingComments(trimmed);
         let m: RegExpMatchArray | null;
 
-        if ((m = trimmed.match(RE_CREATE_DB))) {
+        if (!forMatch) continue; // statement was comments only
+
+        if ((m = forMatch.match(RE_CREATE_DB))) {
           const name = unquoteIdent(m[1]);
           const ifNotExists = /IF\s+NOT\s+EXISTS/i.test(trimmed);
           if (databasesRef.current.has(name)) {
@@ -294,7 +324,7 @@ export function SqlProvider({ children }: { children: React.ReactNode }) {
           continue;
         }
 
-        if ((m = trimmed.match(RE_DROP_DB))) {
+        if ((m = forMatch.match(RE_DROP_DB))) {
           const name = unquoteIdent(m[1]);
           const ifExists = /IF\s+EXISTS/i.test(trimmed);
           const ok = dropDatabase(name);
@@ -312,7 +342,7 @@ export function SqlProvider({ children }: { children: React.ReactNode }) {
           continue;
         }
 
-        if ((m = trimmed.match(RE_USE_DB))) {
+        if ((m = forMatch.match(RE_USE_DB))) {
           const name = unquoteIdent(m[1]);
           const ok = useDatabase(name);
           if (!ok) {
@@ -326,7 +356,7 @@ export function SqlProvider({ children }: { children: React.ReactNode }) {
           continue;
         }
 
-        if (RE_SHOW_DBS.test(trimmed)) {
+        if (RE_SHOW_DBS.test(forMatch)) {
           allResults.push({
             columns: ['Database'],
             values: Array.from(databasesRef.current.keys()).map(n => [n]),

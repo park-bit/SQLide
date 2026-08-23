@@ -13,6 +13,11 @@ const SNIPPETS: Record<string, string> = {
   'New Query': `-- Fetching inspiration from Kanye West...
 SELECT 'One moment...' AS message;`,
 
+  'Database Basics': `-- Multi-database support (client-side, in-memory per tab)
+CREATE DATABASE IF NOT EXISTS shop;
+USE shop;
+SHOW DATABASES;`,
+
   'Create Table': `CREATE TABLE IF NOT EXISTS users (
   id        INTEGER PRIMARY KEY AUTOINCREMENT,
   name      TEXT    NOT NULL,
@@ -95,7 +100,29 @@ function useResizer(initialPx: number, direction: 'bottom' | 'right') {
   return { size, dragging, onMouseDown };
 }
 function IDE() {
-  const { execute, schema, history, clearHistory, exportDb, importDb, ready, initError } = useSql();
+  const {
+    execute, schema, history, clearHistory, exportDb, importDb, ready, initError,
+    currentDatabase, databases, createDatabase, useDatabase, dropDatabase,
+  } = useSql();
+
+  const [newDbOpen, setNewDbOpen] = useState(false);
+  const [newDbName, setNewDbName] = useState('');
+
+  const handleCreateDatabase = useCallback(() => {
+    const name = newDbName.trim();
+    if (!name) return;
+    createDatabase(name);
+    useDatabase(name);
+    setNewDbName('');
+    setNewDbOpen(false);
+  }, [newDbName, createDatabase, useDatabase]);
+
+  const handleDropDatabase = useCallback((name: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (databases.length <= 1) return;
+    if (!window.confirm(`Drop database "${name}"? This cannot be undone.`)) return;
+    dropDatabase(name);
+  }, [databases.length, dropDatabase]);
 
   const handleDownload = useCallback(() => {
     const data = exportDb();
@@ -104,10 +131,10 @@ function IDE() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'database.sqlite';
+    a.download = `${currentDatabase}.sqlite`;
     a.click();
     URL.revokeObjectURL(url);
-  }, [exportDb]);
+  }, [exportDb, currentDatabase]);
 
   const handleImport = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -115,10 +142,14 @@ function IDE() {
     const reader = new FileReader();
     reader.onload = async () => {
       const data = new Uint8Array(reader.result as ArrayBuffer);
-      await importDb(data);
+      const baseName = file.name.replace(/\.(sqlite|db)$/i, '') || 'imported';
+      let name = baseName;
+      let n = 1;
+      while (databases.includes(name)) name = `${baseName}_${++n}`;
+      await importDb(data, name);
     };
     reader.readAsArrayBuffer(file);
-  }, [importDb]);
+  }, [importDb, databases]);
 
   const [tabs, setTabs] = useState<Tab[]>([
     { id: '1', name: 'query_1.sql', query: SNIPPETS['New Query'] },
@@ -227,7 +258,9 @@ function IDE() {
         }
       } else {
         const rowCount = res.results.reduce((s, r) => s + r.values.length, 0);
-        const msg = res.results.length > 0
+        const msg = res.message
+          ? `OK · ${res.message} (${res.executionTime.toFixed(1)}ms)`
+          : res.results.length > 0
           ? `OK · ${rowCount} row(s) returned in ${res.executionTime.toFixed(1)}ms`
           : res.affectedRows !== undefined
           ? `OK · ${res.affectedRows} row(s) affected in ${res.executionTime.toFixed(1)}ms`
@@ -476,6 +509,53 @@ function IDE() {
       <div className={`content-area pos-${outputPosition}`}>
         {sidebarOpen && (
           <aside className="sidebar">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '8px 8px 0 8px' }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" style={{ flexShrink: 0 }}>
+                <ellipse cx="12" cy="5" rx="9" ry="3"/>
+                <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+                <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+              </svg>
+              <select
+                value={currentDatabase}
+                onChange={e => useDatabase(e.target.value)}
+                title="Active database"
+                style={{
+                  flex: 1,
+                  background: 'var(--bg-secondary, #1a1d24)',
+                  color: 'var(--text-primary)',
+                  border: '1px solid var(--border-color, rgba(255,255,255,0.1))',
+                  borderRadius: 4,
+                  fontSize: 11,
+                  fontFamily: 'var(--font-mono)',
+                  padding: '3px 4px',
+                }}
+              >
+                {databases.map(name => (
+                  <option key={name} value={name}>{name}</option>
+                ))}
+              </select>
+              {databases.length > 1 && (
+                <button
+                  className="btn-icon"
+                  title={`Drop database "${currentDatabase}"`}
+                  onClick={e => handleDropDatabase(currentDatabase, e)}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                  </svg>
+                </button>
+              )}
+              <button
+                className="btn-icon"
+                title="Create new database"
+                onClick={() => setNewDbOpen(true)}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+              </button>
+            </div>
             <div className="sidebar__tabs">
               <button 
                 className={`sidebar__tab ${activeSidebarTab === 'explorer' ? 'active' : ''}`}
@@ -610,11 +690,50 @@ function IDE() {
           SQLide v1.0
         </span>
         <span className="statusbar__item">SQLite (in-browser)</span>
+        <span className="statusbar__item">db: {currentDatabase}</span>
         <span className="statusbar__item">{schema.length} tables</span>
         {running && <span className="statusbar__item"><span className="spinner" style={{ width: 10, height: 10, borderWidth: 1.5 }} /> Running…</span>}
       </div>
 
 
+
+      {newDbOpen && (
+        <div className="modal-backdrop" onClick={() => setNewDbOpen(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal__title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: 8 }}>
+                <ellipse cx="12" cy="5" rx="9" ry="3"/>
+                <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+                <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+              </svg>
+              New Database
+            </div>
+            <input
+              type="text"
+              autoFocus
+              value={newDbName}
+              onChange={e => setNewDbName(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleCreateDatabase()}
+              placeholder="database_name"
+              style={{
+                width: '100%',
+                padding: '8px 10px',
+                marginBottom: 12,
+                background: 'var(--bg-secondary, #1a1d24)',
+                color: 'var(--text-primary)',
+                border: '1px solid var(--border-color, rgba(255,255,255,0.1))',
+                borderRadius: 6,
+                fontFamily: 'var(--font-mono)',
+                fontSize: 13,
+              }}
+            />
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button className="btn btn-ghost" onClick={() => setNewDbOpen(false)}>Cancel</button>
+              <button className="btn btn-run" disabled={!newDbName.trim()} onClick={handleCreateDatabase}>Create</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {snippetOpen && (
         <div className="modal-backdrop" onClick={() => setSnippetOpen(false)}>
